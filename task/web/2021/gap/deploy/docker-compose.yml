@@ -1,0 +1,40 @@
+version: '2.4'
+services:
+  proxy:
+    build: ./proxy
+    mem_limit: 512m
+    cpus: 1
+    ports:
+      - 3300:8000
+
+  db:
+    build: ./db
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - node.name=task-node
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - USER=ctfcup
+      - PASSWORD=ctfcup
+    pids_limit: 2048
+    mem_limit: 1024m
+    cpus: 1
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the Elasticsearch user, set to at least 65536 on modern systems
+        hard: 65536
+
+  initializer:
+    build: ./initializer
+    depends_on:
+      - db
+    environment:
+      FLAG: "CUP{b061ac18135f641c21f8f429efe4d1a47d7acc37}"
+      DB_HOST: "https://db"
+      WRITER_USER: "${WRITER_USER}"
+      WRITER_PASS: "${WRITER_PASS}"
+
